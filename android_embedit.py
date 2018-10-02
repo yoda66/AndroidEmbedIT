@@ -12,10 +12,12 @@ import xml.etree.ElementTree as ET
 
 class AndroidEmbed():
 
-    def __init__(self, apk, msfapk, keystore=''):
+    def __init__(self, apk, msfapk, keystore='', kspass='', keyname=''):
         self.apk = apk
         self.msfapk = msfapk
         self.keystore = keystore
+        self.kspass = kspass
+        self.keyname = keyname
         home = os.path.expanduser('~')
         self.workdir = os.path.join(home, '.ae')
         if not os.path.exists(self.workdir):
@@ -136,12 +138,12 @@ class AndroidEmbed():
         fp = os.path.join(self.workdir, 'final.apk')
         print('[*] Signing [{0}]'.format(fp))
         cmd = 'jarsigner -verbose -keystore {0} '.format(self.keystore)
-        cmd += '-storepass android -keypass android '
+        cmd += '-storepass {0} '.format(self.kspass)
         cmd += '-digestalg SHA1 -sigalg SHA1withRSA '
-        cmd += '{0} androiddebugkey'.format(fp)
+        cmd += '{0} {1}'.format(fp, self.keyname)
         out, err = self.oscmd(cmd)
-        if b'RuntimeException' in out or len(err) > 0:
-            Exception(str(out + err))
+        if 'jarsigner error' in out:
+            raise Exception(str(out + err))
 
     def oscmd(self, cmd):
         p = subprocess.Popen(
@@ -151,7 +153,7 @@ class AndroidEmbed():
             stderr=subprocess.PIPE
         )
         stdout, stderr = p.communicate()
-        return stdout, stderr
+        return stdout.decode(), stderr.decode()
 
     def launch_activity_name(self):
         app = self.root1.find('application')
@@ -179,6 +181,14 @@ if __name__ == '__main__':
         '-ks', '--keystore', default='debug.keystore',
         help='Android keystore file'
     )
+    parser.add_argument(
+        '-kp', '--kspass', default='android',
+        help='Android keystore password'
+    )
+    parser.add_argument(
+        '-kn', '--keyname', default='androiddebugkey',
+        help='Android keystore key name'
+    )
     print("""\
 [*]===============================
 [*] Android EmbedIt Version 1.0
@@ -189,6 +199,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ae = AndroidEmbed(
         args.apk, args.msfapk,
-        keystore=args.keystore
+        keystore=args.keystore,
+        kspass=args.kspass,
+        keyname=args.keyname
     )
     ae.run()
