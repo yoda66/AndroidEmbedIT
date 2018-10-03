@@ -136,13 +136,31 @@ class AndroidEmbed():
     def sign(self):
         os.chdir(self.cwd)
         fp = os.path.join(self.workdir, 'final.apk')
+
+        kn = self.keyname
+        kp = self.kspass
+        ks = self.keystore
+        if not os.path.exists(ks):
+            print('[*] Creating new self-signed keystore file')
+            kp = self.randstr()
+            ks = os.path.join(self.workdir, 'temp.keystore')
+            if os.path.exists(ks):
+                os.remove(ks)
+            kn = 'temp'
+            cmd = 'keytool -genkey -v -keystore {0} '.format(ks)
+            cmd += '-alias {0} -keyalg RSA -keysize 2048 '.format(kn)
+            cmd += '-validity 10000 -storepass {0} -dname cn=temp'.format(kp)
+            out, err = self.oscmd(cmd)
+            if 'keytool error' in out:
+                raise Exception(str(out + err))
+
         print('[*] Signing [{0}]'.format(fp))
-        cmd = 'jarsigner -verbose -keystore {0} '.format(self.keystore)
-        cmd += '-storepass {0} '.format(self.kspass)
+        cmd = 'jarsigner -verbose -keystore {0} '.format(ks)
+        cmd += '-storepass {0} '.format(kp)
         cmd += '-digestalg SHA1 -sigalg SHA1withRSA '
-        cmd += '{0} {1}'.format(fp, self.keyname)
+        cmd += '{0} {1}'.format(fp, kn)
         out, err = self.oscmd(cmd)
-        if 'jarsigner error' in out:
+        if 'jarsigner error' in out or len(err) > 0:
             raise Exception(str(out + err))
 
     def oscmd(self, cmd):
