@@ -125,7 +125,7 @@ class AndroidEmbed():
 
     def compile(self, apk):
         print('[*] apktool compiling [{0}]'.format(apk))
-        out, err = self.oscmd('apktool b {0}'.format(apk))
+        out, err = self.oscmd('apktool b --use-aapt2 {0}'.format(apk))
         if len(err) > 0:
             Exception(str(err))
         shutil.copyfile(os.path.join(
