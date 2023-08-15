@@ -125,7 +125,7 @@ class AndroidEmbed():
 
     def compile(self, apk):
         print('[*] apktool compiling [{0}]'.format(apk))
-        out, err = self.oscmd('apktool b {0}'.format(apk))
+        out, err = self.oscmd('apktool b --use-aapt2 {0}'.format(apk))
         if len(err) > 0:
             Exception(str(err))
         shutil.copyfile(os.path.join(
@@ -155,10 +155,11 @@ class AndroidEmbed():
                 raise Exception(str(out + err))
 
         print('[*] Signing [{0}]'.format(fp))
-        cmd = 'jarsigner -verbose -keystore {0} '.format(ks)
-        cmd += '-storepass {0} '.format(kp)
-        cmd += '-digestalg SHA1 -sigalg SHA1withRSA '
-        cmd += '{0} {1}'.format(fp, kn)
+        cmd = 'apksigner sign --ks {0} '.format(ks)
+        cmd += '--ks-pass pass:{0} '.format(kp)
+        #cmd += '-digestalg SHA1 -sigalg SHA1withRSA '
+        cmd += '{0}'.format(fp)
+        print(cmd)
         out, err = self.oscmd(cmd)
         if 'jarsigner error' in out or len(err) > 0:
             raise Exception(str(out + err))
